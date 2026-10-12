@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart POS - Kasir Ritel</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background: #0f172a;
+      color: #f8fafc;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #1e293b;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #334155;
+    }
+
+    .brand {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .main-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* Area Katalog Produk */
+    .catalog-section {
+      padding: 20px;
+      overflow-y: auto;
+    }
+
+    .search-bar {
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+
+    .product-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .product-card:hover {
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+    }
+
+    .prod-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
+
+    .prod-sku {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-bottom: 8px;
+    }
+
+    .prod-price {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 8px;
+    }
+
+    .stock-badge {
+      font-size: 0.75rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      width: fit-content;
+    }
+
+    .stock-safe {
+      background: #064e3b;
+      color: #6ee7b7;
+    }
+
+    .stock-low {
+      background: #7f1d1d;
+      color: #fca5a5;
+    }
+
+    /* Area Keranjang Kasir */
+    .cart-section {
+      background: #1e293b;
+      border-left: 1px solid #334155;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .cart-header {
+      padding: 16px;
+      border-bottom: 1px solid #334155;
+      font-weight: 700;
+    }
+
+    .cart-items {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      padding: 10px;
+      border-radius: 6px;
+    }
+
+    .cart-item-name {
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .cart-item-price {
+      font-size: 0.8rem;
+      color: #94a3b8;
+    }
+
+    .qty-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .qty-btn {
+      background: #334155;
+      color: #fff;
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .qty-btn:hover {
+      background: #475569;
+    }
+
+    .cart-footer {
+      padding: 16px;
+      border-top: 1px solid #334155;
+      background: #1e293b;
+    }
+
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .checkout-btn {
+      width: 100%;
+      padding: 12px;
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .checkout-btn:hover {
+      background: #1d4ed8;
+    }
+
+    .checkout-btn:disabled {
+      background: #475569;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="brand">Point of Sale (POS) Kasir</div>
+    <div style="font-size: 0.85rem; color: #94a3b8;">Status: Database SQLite Siap</div>
+  </header>
+
+  <div class="main-layout">
+    <!-- Katalog Produk -->
+    <div class="catalog-section">
+      <input type="text" id="searchInput" class="search-bar" placeholder="Cari nama atau barcode/SKU produk..."
+        oninput="renderProducts()">
+      <div id="productGrid" class="product-grid"></div>
+    </div>
+
+    <!-- Keranjang Belanja -->
+    <div class="cart-section">
+      <div class="cart-header">Pesanan Saat Ini</div>
+      <div id="cartItems" class="cart-items">
+        <div style="text-align: center; color: #64748b; margin-top: 40px; font-size: 0.9rem;">Keranjang masih
+          kosong.<br>Klik produk di samping untuk menambahkan.</div>
+      </div>
+      <div class="cart-footer">
+        <div class="total-row">
+          <span>Total Tagihan:</span>
+          <span id="totalDisplay">Rp 0</span>
+        </div>
+        <button id="payButton" class="checkout-btn" onclick="checkout()" disabled>Proses Pembayaran</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let products = [];
+    let cart = {};
+
+    async function loadProducts() {
+      const res = await fetch('/api/products');
+      products = await res.json();
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      const grid = document.getElementById('productGrid');
+      const filtered = products.filter(p => p.name.toLowerCase().includes(query) || p.sku.toLowerCase().includes(query));
+
+      grid.innerHTML = filtered.map(p => {
+        const isLow = p.stock <= p.reorder_point;
+        return `
+                    <div class="product-card" onclick="addToCart(${p.id})">
+                        <div>
+                            <div class="prod-sku">${p.sku} • ${p.category || 'Retail'}</div>
+                            <div class="prod-name">${p.name}</div>
+                        </div>
+                        <div>
+                            <div class="prod-price">Rp ${p.price.toLocaleString('id-ID')}</div>
+                            <span class="stock-badge ${isLow ? 'stock-low' : 'stock-safe'}">
+                                Stok: ${p.stock} pcs ${isLow ? '(Menipis)' : ''}
+                            </span>
+                        </div>
+                    </div>
+                `;
+      }).join('');
+    }
+
+    function addToCart(id) {
+      const prod = products.find(p => p.id === id);
+      if (!prod || prod.stock <= 0) return;
+
+      if (cart[id]) {
+        if (cart[id].qty < prod.stock) cart[id].qty++;
+      } else {
+        cart[id] = { product: prod, qty: 1 };
+      }
+      renderCart();
+    }
+
+    function changeQty(id, delta) {
+      if (!cart[id]) return;
+      cart[id].qty += delta;
+      if (cart[id].qty <= 0) {
+        delete cart[id];
+      } else if (cart[id].qty > cart[id].product.stock) {
+        cart[id].qty = cart[id].product.stock;
+      }
+      renderCart();
+    }
+
+    function renderCart() {
+      const container = document.getElementById('cartItems');
+      const totalDisplay = document.getElementById('totalDisplay');
+      const payButton = document.getElementById('payButton');
+      const itemKeys = Object.keys(cart);
+
+      if (itemKeys.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #64748b; margin-top: 40px; font-size: 0.9rem;">Keranjang masih kosong.<br>Klik produk di samping untuk menambahkan.</div>';
+        totalDisplay.innerText = 'Rp 0';
+        payButton.disabled = true;
+        return;
+      }
+
+      let total = 0;
+      container.innerHTML = itemKeys.map(id => {
+        const item = cart[id];
+        const subtotal = item.qty * item.product.price;
+        total += subtotal;
+        return `
+                    <div class="cart-item">
+                        <div>
+                            <div class="cart-item-name">${item.product.name}</div>
+                            <div class="cart-item-price">Rp ${item.product.price.toLocaleString('id-ID')} x ${item.qty}</div>
+                        </div>
+                        <div class="qty-controls">
+                            <button class="qty-btn" onclick="changeQty(${id}, -1)">-</button>
+                            <span>${item.qty}</span>
+                            <button class="qty-btn" onclick="changeQty(${id}, 1)">+</button>
+                        </div>
+                    </div>
+                `;
+      }).join('');
+
+      totalDisplay.innerText = `Rp ${total.toLocaleString('id-ID')}`;
+      payButton.disabled = false;
+    }
+
+    async function checkout() {
+      const items = Object.keys(cart).map(id => ({
+        product_id: parseInt(id),
+        quantity: cart[id].qty
+      }));
+
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Transaksi Berhasil!\nNo. Struk: ${data.receipt_number}\nTotal: Rp ${data.total_paid.toLocaleString('id-ID')}`);
+        cart = {};
+        renderCart();
+        loadProducts();
+      } else {
+        const err = await res.json();
+        alert(`Gagal: ${err.detail}`);
+      }
+    }
+
+    loadProducts();
+  </script>
+</body>
+
+</html>
